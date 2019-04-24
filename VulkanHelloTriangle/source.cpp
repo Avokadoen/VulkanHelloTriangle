@@ -18,7 +18,8 @@ const std::vector<const char*> validationLayers = {
 	"VK_LAYER_LUNARG_standard_validation"
 };
 
-// TODO: remove bool and just use def in code
+// TODO: remove bool and just use def in code 
+// NOTE: might clutter code. if not in the game loop, the bool can remain.
 #ifdef NDEBUG
 const bool enableValidationLayers = false;
 #else
@@ -39,8 +40,10 @@ private:
 /* ---------------MEMBER VARIABLES-------------- */
 	GLFWwindow* window;
 	VkInstance instance;
+	VkDebugUtilsMessengerEXT debugMessenger;
 
 /* ---------------MEMBER FUNCTIONS-------------- */
+	/* ---------------RUN FUNCTIONS-------------- */
 	void initWindow() {
 		glfwInit();
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
@@ -50,7 +53,30 @@ private:
 		window = glfwCreateWindow(WIDTH, HEIGHT, APPLICATION_NAME, nullptr, nullptr);
 	}
 
+	void initVulkan() {
+		createInstance();
+		setupDebugMessenger();
+
+		while (!glfwWindowShouldClose(window)) {
+			glfwPollEvents();
+		}
+	}
+
+	void mainLoop() {
+
+	}
+
+	void cleanup() {
+		vkDestroyInstance(instance, nullptr);
+
+		glfwDestroyWindow(window);
+
+		glfwTerminate();
+	}
+
+	/* -------------RUN UTILITY FUNCTIONS------------ */
 	void createInstance() {
+
 
 		// create application information
 		VkApplicationInfo appInfo = {};
@@ -66,15 +92,12 @@ private:
 		createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
 		createInfo.pApplicationInfo = &appInfo;
 
-		uint32_t glfwExtensionCount = 0;
-		const char** glfwExtensions;
-		glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+		auto extensions = getRequiredExtensions();
+		createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
+		createInfo.ppEnabledExtensionNames = extensions.data();
 
-		createInfo.enabledExtensionCount = glfwExtensionCount;
-		createInfo.ppEnabledExtensionNames = glfwExtensions;
-		
 		if (enableValidationLayers) {
-		
+
 			if (!checkValidationLayerSupport()) {
 				throw std::runtime_error("validation layers requested, but not available!");
 			}
@@ -91,8 +114,33 @@ private:
 		if (vkCreateInstance(&createInfo, nullptr, &instance) != VK_SUCCESS) {
 			throw std::runtime_error("failed to create vulkan instance!");
 		}
+	}
 
+	void setupDebugMessenger() {
+		if (!enableValidationLayers) return;
 
+		VkDebugUtilsMessengerCreateInfoEXT createInfo = {};
+		createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+		createInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+		createInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+		createInfo.pfnUserCallback = debugCallback;
+		createInfo.pUserData = nullptr; // Optional
+
+		// TODO: .... 
+	}
+
+	std::vector<const char*> getRequiredExtensions() {
+		uint32_t glfwExtensionCount = 0;
+		const char** glfwExtensions;
+		glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+
+		std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
+
+		if (enableValidationLayers) {
+			extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+		}
+
+		return extensions;
 	}
 
 	bool checkValidationLayerSupport() {
@@ -101,7 +149,7 @@ private:
 
 		std::vector<VkLayerProperties> availableLayers(layerCount);
 		vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
-		
+
 		for (const char* layerName : validationLayers) {
 			bool layerFound = false;
 
@@ -120,24 +168,18 @@ private:
 		return true;
 	}
 
-	void initVulkan() {
-		createInstance();
+	static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
+		VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+		VkDebugUtilsMessageTypeFlagsEXT messageType,
+		const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+		void* pUserData) {
 
-		while (!glfwWindowShouldClose(window)) {
-			glfwPollEvents();
+		// Message is important enough to show
+		if (messageSeverity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) {
+			std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
 		}
-	}
 
-	void mainLoop() {
-
-	}
-
-	void cleanup() {
-		vkDestroyInstance(instance, nullptr);
-
-		glfwDestroyWindow(window);
-
-		glfwTerminate();
+		return VK_FALSE;
 	}
 };
 
