@@ -21,7 +21,7 @@ include_directories(VulkanHelloTriangle
 )
 
 target_link_libraries(VulkanHelloTriangle
-	"C:/repositories/VulkanHelloTriangle/libraries/glfw-3.3.bin.WIN64/lib-vc2017/glfw3.lib"
+	"C:/Users/Aksel/Documents/repositories/VulkanHelloTriangle/libraries/glfw-3.3.bin.WIN64/lib-vc2017/glfw3.lib"
 	#"./libraries/glfw-3.3.bin.WIN64/lib-vc2017/glfw3"
 	"C:/VulkanSDK/1.1.106.0/Lib/vulkan-1.lib"
 )
