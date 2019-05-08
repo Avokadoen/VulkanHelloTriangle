@@ -1,6 +1,6 @@
 # avoid using this cmake
 
-# TODO: fix
+# TODO: fix | no abs path & build dependencies properly | mode files (like shaders into build)
 
 cmake_minimum_required (VERSION 2.6)
 
